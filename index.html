@@ -62,9 +62,20 @@
       </div>
     </div>
 
+    <div class="panel">
+      <h2>雲端同步（跨裝置）</h2>
+      <p class="muted">設定一組「同步代碼」，在其他裝置輸入同一組代碼，就能看到同一份練習紀錄。代碼是明碼共享機制，知道代碼的人都能讀寫這份紀錄，請自己保管好，不要公開分享。</p>
+      <div class="form-row">
+        <input type="text" id="sync-code-input" placeholder="輸入同步代碼（多裝置用同一組）">
+        <button id="btn-sync-set-code" class="btn btn-primary">連結這組代碼</button>
+        <button id="btn-sync-generate-code" class="btn btn-ghost">產生新代碼（第一次用）</button>
+      </div>
+      <p id="sync-status" class="muted">尚未設定同步。</p>
+    </div>
+
     <div class="panel danger-zone">
       <h2>資料管理</h2>
-      <p class="muted">所有紀錄只存在這台電腦的瀏覽器中（localStorage），換瀏覽器或清除快取會遺失。</p>
+      <p class="muted">未設定雲端同步時，紀錄只存在這台電腦的瀏覽器中（localStorage），換瀏覽器或清除快取會遺失。</p>
       <button id="btn-reset-all" class="btn btn-danger">清除所有練習紀錄</button>
     </div>
   </section>
@@ -282,6 +293,7 @@
 <script src="data/part7.js"></script>
 <script src="data/vocab.js"></script>
 <script src="data/hs7000.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js"></script>
 </body>
 </html>

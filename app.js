@@ -20,6 +20,108 @@ function loadJSON(key, fallback) {
 
 function saveJSON(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+  scheduleCloudPush();
+}
+
+/* ===================== 雲端同步 ===================== */
+
+const SYNC_CODE_KEY = 'toeic_sync_code';
+const SUPABASE_URL = 'https://hiinhsxaxnsruuejhybq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_rTgFbEN54f0shHoq5FbkIQ_i7vL4tmA';
+
+const supabaseClient = window.supabase
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  : null;
+
+function syncKeyList() {
+  return [...Object.values(LS_KEYS), ...Object.values(VOCAB_LS_KEYS)];
+}
+
+function getSyncCode() {
+  return localStorage.getItem(SYNC_CODE_KEY) || '';
+}
+
+function setSyncCode(code) {
+  localStorage.setItem(SYNC_CODE_KEY, code);
+}
+
+function generateSyncCode() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function setSyncStatus(text) {
+  const el = document.getElementById('sync-status');
+  if (el) el.textContent = text;
+}
+
+function collectSyncBundle() {
+  const bundle = {};
+  syncKeyList().forEach(key => {
+    const raw = localStorage.getItem(key);
+    if (raw !== null) bundle[key] = JSON.parse(raw);
+  });
+  return bundle;
+}
+
+function applySyncBundle(bundle) {
+  if (!bundle) return;
+  Object.entries(bundle).forEach(([key, value]) => {
+    localStorage.setItem(key, JSON.stringify(value));
+  });
+}
+
+let cloudPushTimer = null;
+function scheduleCloudPush() {
+  if (!supabaseClient || !getSyncCode()) return;
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer = setTimeout(pushToCloud, 1500);
+}
+
+async function pushToCloud() {
+  const code = getSyncCode();
+  if (!supabaseClient || !code) return;
+  setSyncStatus('同步中…');
+  try {
+    const { error } = await supabaseClient
+      .from('toeic_progress')
+      .upsert({ code, data: collectSyncBundle(), updated_at: new Date().toISOString() });
+    if (error) throw error;
+    setSyncStatus(`已連結代碼「${code}」，上次同步：${new Date().toLocaleTimeString('zh-TW')}`);
+  } catch (e) {
+    setSyncStatus(`同步失敗：${e.message || e}`);
+  }
+}
+
+async function pullFromCloud(code) {
+  if (!supabaseClient || !code) return;
+  setSyncStatus('讀取雲端紀錄中…');
+  try {
+    const { data, error } = await supabaseClient
+      .from('toeic_progress')
+      .select('data')
+      .eq('code', code)
+      .maybeSingle();
+    if (error) throw error;
+    if (data && data.data) {
+      applySyncBundle(data.data);
+      setSyncStatus(`已連結代碼「${code}」，讀取到雲端紀錄。`);
+    } else {
+      setSyncStatus(`已連結代碼「${code}」（雲端目前無資料，將以這台裝置的紀錄為主）。`);
+      await pushToCloud();
+    }
+  } catch (e) {
+    setSyncStatus(`讀取失敗：${e.message || e}`);
+  }
+}
+
+async function initSync() {
+  const code = getSyncCode();
+  const input = document.getElementById('sync-code-input');
+  if (code && input) input.value = code;
+  if (code) await pullFromCloud(code);
 }
 
 function getMergedData() {
@@ -1095,12 +1197,36 @@ document.getElementById('btn-reset-all').addEventListener('click', () => {
   }
 });
 
+document.getElementById('btn-sync-generate-code').addEventListener('click', async () => {
+  const code = generateSyncCode();
+  document.getElementById('sync-code-input').value = code;
+  setSyncCode(code);
+  await pushToCloud();
+});
+
+document.getElementById('btn-sync-set-code').addEventListener('click', async () => {
+  const code = document.getElementById('sync-code-input').value.trim();
+  if (!code) { setSyncStatus('請先輸入代碼。'); return; }
+  setSyncCode(code);
+  await pullFromCloud(code);
+  renderDashboard();
+  renderWrongbook();
+  renderImportCounts();
+  populateVocabCategorySelects();
+  renderFlashcards();
+  renderVocabStatsHint();
+  renderVocabWeakList();
+});
+
 /* ===================== 初始化 ===================== */
 
-populateCategoryOptions();
-updatePracticePoolHint();
-renderDashboard();
-renderImportCounts();
-populateVocabCategorySelects();
-renderFlashcards();
-renderVocabStatsHint();
+(async function initApp() {
+  await initSync();
+  populateCategoryOptions();
+  updatePracticePoolHint();
+  renderDashboard();
+  renderImportCounts();
+  populateVocabCategorySelects();
+  renderFlashcards();
+  renderVocabStatsHint();
+})();
