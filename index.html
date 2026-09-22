@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TOEIC 990 衝刺題庫</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">TOEIC 990 衝刺題庫</div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="dashboard">儀表板</button>
+    <button class="tab-btn" data-tab="practice">練習</button>
+    <button class="tab-btn" data-tab="mock">模擬考</button>
+    <button class="tab-btn" data-tab="vocab">單字</button>
+    <button class="tab-btn" data-tab="wrongbook">錯題本</button>
+    <button class="tab-btn" data-tab="import">匯入題庫</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===================== DASHBOARD ===================== -->
+  <section id="tab-dashboard" class="tab-panel active">
+    <h1>學習儀表板</h1>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">累積作答題數</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-accuracy">--</div>
+        <div class="stat-label">整體正確率</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-streak">0</div>
+        <div class="stat-label">連續練習天數</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-wrongcount">0</div>
+        <div class="stat-label">錯題本待複習</div>
+      </div>
+    </div>
+
+    <div class="dash-row">
+      <div class="panel">
+        <h2>各 Part 正確率</h2>
+        <div id="part-breakdown" class="bar-list"></div>
+      </div>
+      <div class="panel">
+        <h2>最弱文法/題型分類（至少作答 3 次）</h2>
+        <div id="weak-categories" class="bar-list"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>模擬考成績趨勢（估算 RC 分數）</h2>
+      <div id="exam-history" class="exam-history-list">
+        <p class="empty-hint">還沒有模擬考紀錄，去「模擬考」分頁跑一次看看吧。</p>
+      </div>
+    </div>
+
+    <div class="panel danger-zone">
+      <h2>資料管理</h2>
+      <p class="muted">所有紀錄只存在這台電腦的瀏覽器中（localStorage），換瀏覽器或清除快取會遺失。</p>
+      <button id="btn-reset-all" class="btn btn-danger">清除所有練習紀錄</button>
+    </div>
+  </section>
+
+  <!-- ===================== PRACTICE ===================== -->
+  <section id="tab-practice" class="tab-panel">
+    <h1>練習模式</h1>
+
+    <div id="practice-setup" class="panel">
+      <h2>選擇範圍</h2>
+      <div class="form-row">
+        <label><input type="checkbox" class="part-check" value="5" checked> Part 5（句子文法/字彙）</label>
+        <label><input type="checkbox" class="part-check" value="6" checked> Part 6（段落填空）</label>
+        <label><input type="checkbox" class="part-check" value="7" checked> Part 7（閱讀測驗）</label>
+      </div>
+      <div class="form-row">
+        <label>分類篩選：
+          <select id="practice-category">
+            <option value="all">全部分類</option>
+          </select>
+        </label>
+        <label>難度篩選：
+          <select id="practice-difficulty">
+            <option value="all">全部難度</option>
+            <option value="1">1（基礎）</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5（近滿分）</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label>題數上限：
+          <input type="number" id="practice-count" value="10" min="1" max="50" style="width:70px">
+        </label>
+        <label><input type="checkbox" id="practice-wrong-only"> 只出錯題本裡的題目</label>
+      </div>
+      <button id="btn-start-practice" class="btn btn-primary">開始練習</button>
+      <p id="practice-pool-hint" class="muted"></p>
+    </div>
+
+    <div id="practice-session" class="panel" hidden>
+      <div class="session-header">
+        <span id="practice-progress"></span>
+        <button id="btn-end-practice" class="btn btn-ghost">結束本次練習</button>
+      </div>
+      <div id="practice-unit"></div>
+      <div class="session-footer">
+        <button id="btn-check-answer" class="btn btn-primary">對答案</button>
+        <button id="btn-next-unit" class="btn btn-primary" hidden>下一題</button>
+      </div>
+    </div>
+
+    <div id="practice-summary" class="panel" hidden>
+      <h2>本次練習結果</h2>
+      <div id="practice-summary-body"></div>
+      <button id="btn-practice-again" class="btn btn-primary">再練一次</button>
+    </div>
+  </section>
+
+  <!-- ===================== MOCK EXAM ===================== -->
+  <section id="tab-mock" class="tab-panel">
+    <h1>模擬考模式</h1>
+
+    <div id="mock-setup" class="panel">
+      <h2>設定模考範圍（模擬正式考試：先作答完才看結果）</h2>
+      <div class="form-row">
+        <label>Part 5 題數：<input type="number" id="mock-p5-count" value="15" min="0" max="60" style="width:70px"></label>
+        <label>Part 6 篇數（每篇 4 空格）：<input type="number" id="mock-p6-count" value="2" min="0" max="6" style="width:70px"></label>
+        <label>Part 7 篇組數：<input type="number" id="mock-p7-count" value="3" min="0" max="10" style="width:70px"></label>
+      </div>
+      <div class="form-row">
+        <label>時間限制（分鐘）：<input type="number" id="mock-time" value="30" min="5" max="120" style="width:70px"></label>
+        <button id="btn-suggest-time" class="btn btn-ghost">依題量建議時間</button>
+      </div>
+      <button id="btn-start-mock" class="btn btn-primary">開始模擬考</button>
+      <p class="muted">分數為依「答對率」換算的粗略估算值，僅供參考，非官方多益換算表。</p>
+    </div>
+
+    <div id="mock-session" class="panel" hidden>
+      <div class="session-header">
+        <span id="mock-progress"></span>
+        <span id="mock-timer" class="timer">--:--</span>
+      </div>
+      <div id="mock-unit"></div>
+      <div class="session-footer">
+        <button id="btn-mock-prev" class="btn btn-ghost">上一題</button>
+        <button id="btn-mock-next" class="btn btn-primary">下一題</button>
+        <button id="btn-mock-submit" class="btn btn-danger">交卷</button>
+      </div>
+    </div>
+
+    <div id="mock-result" class="panel" hidden>
+      <h2>模考結果</h2>
+      <div id="mock-result-body"></div>
+      <button id="btn-mock-review-wrong" class="btn btn-ghost">查看錯題詳解</button>
+      <button id="btn-mock-again" class="btn btn-primary">再考一次</button>
+    </div>
+  </section>
+
+  <!-- ===================== VOCABULARY ===================== -->
+  <section id="tab-vocab" class="tab-panel">
+    <h1>多益高頻單字</h1>
+
+    <div class="form-row">
+      <button class="subtab-btn active" data-subtab="vocab-flashcard">字卡瀏覽</button>
+      <button class="subtab-btn" data-subtab="vocab-quiz">測驗練習</button>
+    </div>
+
+    <div id="subtab-vocab-flashcard" class="subtab-panel active">
+      <div class="panel">
+        <div class="form-row">
+          <label>分類：
+            <select id="vocab-fc-category">
+              <option value="all">全部分類</option>
+            </select>
+          </label>
+          <button id="btn-vocab-fc-shuffle" class="btn btn-ghost">隨機排序</button>
+        </div>
+        <p class="muted">點卡片可以翻面看中文意思和例句。</p>
+        <div id="vocab-flashcard-grid" class="flashcard-grid"></div>
+      </div>
+    </div>
+
+    <div id="subtab-vocab-quiz" class="subtab-panel">
+      <div id="vocab-quiz-setup" class="panel">
+        <h2>設定測驗範圍</h2>
+        <div class="form-row">
+          <label>分類：
+            <select id="vocab-quiz-category">
+              <option value="all">全部分類</option>
+            </select>
+          </label>
+          <label>題數：<input type="number" id="vocab-quiz-count" value="15" min="1" max="60" style="width:70px"></label>
+          <label><input type="checkbox" id="vocab-quiz-weak-only"> 只考待加強單字</label>
+        </div>
+        <button id="btn-start-vocab-quiz" class="btn btn-primary">開始測驗</button>
+        <p id="vocab-stats-hint" class="muted"></p>
+      </div>
+
+      <div id="vocab-quiz-session" class="panel" hidden>
+        <div class="session-header">
+          <span id="vocab-quiz-progress"></span>
+          <button id="btn-end-vocab-quiz" class="btn btn-ghost">結束測驗</button>
+        </div>
+        <div id="vocab-quiz-unit"></div>
+        <div class="session-footer">
+          <button id="btn-check-vocab-answer" class="btn btn-primary">對答案</button>
+          <button id="btn-next-vocab" class="btn btn-primary" hidden>下一題</button>
+        </div>
+      </div>
+
+      <div id="vocab-quiz-summary" class="panel" hidden>
+        <h2>測驗結果</h2>
+        <div id="vocab-quiz-summary-body"></div>
+        <button id="btn-vocab-quiz-again" class="btn btn-primary">再測一次</button>
+      </div>
+
+      <div class="panel">
+        <h2>待加強單字（答錯自動加入，連續答對 2 次自動移除）</h2>
+        <div id="vocab-weak-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== WRONG BOOK ===================== -->
+  <section id="tab-wrongbook" class="tab-panel">
+    <h1>錯題本</h1>
+    <p class="muted">答錯會自動加入這裡；同一題連續答對 2 次會自動移除。也可以手動移除。</p>
+    <div class="form-row">
+      <button id="btn-retry-wrongbook" class="btn btn-primary">複習全部錯題（練習模式）</button>
+      <button id="btn-clear-wrongbook" class="btn btn-ghost">清空錯題本</button>
+    </div>
+    <div id="wrongbook-list"></div>
+  </section>
+
+  <!-- ===================== IMPORT ===================== -->
+  <section id="tab-import" class="tab-panel">
+    <h1>匯入自己的題庫</h1>
+    <p class="muted">
+      貼上符合格式的 JSON 陣列即可加入題庫，會存在這台瀏覽器裡並與內建題目合併使用。
+      格式說明：Part 5 為單題陣列（sentence/options/answer/explanation）；
+      Part 6 為段落填空陣列（passage + blanks[4]）；
+      Part 7 為篇組陣列（passages[] + questions[]）；
+      單字為單字陣列（word/pos/meaning/example/category/difficulty）。
+      可先用「匯出目前已匯入題目」按鈕看範例格式。
+    </p>
+    <div class="form-row">
+      <label>題目類型：
+        <select id="import-part">
+          <option value="5">Part 5</option>
+          <option value="6">Part 6</option>
+          <option value="7">Part 7</option>
+          <option value="vocab">單字</option>
+        </select>
+      </label>
+    </div>
+    <textarea id="import-textarea" rows="10" placeholder="貼上 JSON 陣列..."></textarea>
+    <div class="form-row">
+      <button id="btn-import-submit" class="btn btn-primary">加入題庫</button>
+      <button id="btn-export-custom" class="btn btn-ghost">匯出目前已匯入題目</button>
+    </div>
+    <p id="import-status" class="muted"></p>
+    <div class="panel">
+      <h2>目前已匯入題數</h2>
+      <ul id="import-counts"></ul>
+    </div>
+  </section>
+
+</main>
+
+<script src="data/part5.js"></script>
+<script src="data/part6.js"></script>
+<script src="data/part7.js"></script>
+<script src="data/vocab.js"></script>
+<script src="data/hs7000.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
