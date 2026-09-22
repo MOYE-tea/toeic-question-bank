@@ -849,7 +849,7 @@ const VOCAB_LS_KEYS = {
 
 function getVocabList() {
   const custom = loadJSON(VOCAB_LS_KEYS.custom, []);
-  return [...(window.TOEIC_VOCAB || []), ...(window.HS7000_VOCAB || []), ...custom];
+  return [...(window.TOEIC_VOCAB || []), ...(window.HS7000_VOCAB || []), ...(window.DAOKAO_VOCAB || []), ...custom];
 }
 
 function vocabCategories() {
@@ -945,7 +945,7 @@ function generateVocabQuestion(word) {
   const distractors = pickDistractors(word, pool, 3);
   const canBlank = word.example.toLowerCase().includes(word.word.toLowerCase());
   const type = canBlank && Math.random() < 0.5 ? 'blank' : 'meaning';
-  const explanation = `${word.word}（${word.pos}）意思是「${word.meaning}」。例句：${word.example}`;
+  const explanation = `${word.word}（${word.pos}）意思是「${word.meaning}」。${word.example ? `例句：${word.example}` : ''}`;
 
   if (type === 'meaning') {
     const options = shuffle([word, ...distractors]).map(w => w.meaning);
